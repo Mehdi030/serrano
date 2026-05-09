@@ -1,5 +1,5 @@
 """
-Routenverwaltung — Schmuggel-/Drogen-/Geschaefts-Routen des Kartells
+Routenverwaltung — Schmuggel-/Drogen-/Geschäfts-Routen des Kartells
 
 Berechtigungen: ROUTE_RANKS (Supervisore, Capo, Vice Don, Don)
 
@@ -8,8 +8,8 @@ Commands:
   /route liste        Alle Routen (optional gefiltert)
   /route info         Details einer Route
   /route status       Status setzen (aktiv/pausiert/verbrannt)
-  /route notiz        Notiz zur Route hinzufuegen
-  /route entfernen    Route komplett loeschen
+  /route notiz        Notiz zur Route hinzufügen
+  /route entfernen    Route komplett löschen
 """
 import discord
 from discord import app_commands
@@ -30,7 +30,7 @@ STATUS_EMOJI = {
 def perm_check(interaction: discord.Interaction) -> tuple[bool, str]:
     if not has_rang_in(interaction.user, config.ROUTE_RANKS):
         erlaubte = ", ".join(rang_name(r) for r in config.ROUTE_RANKS)
-        return False, f"❌ Routenverwaltung nur fuer: {erlaubte}"
+        return False, f"❌ Routenverwaltung nur für: {erlaubte}"
     return True, ""
 
 
@@ -102,7 +102,7 @@ class Route(commands.Cog):
             lines.append(f"{emoji} `#{r['id']:>3}` · **{r['name']}** · {r['start_ort']} → {r['ziel']} · {r['ware']}")
 
         embed = discord.Embed(
-            title=f"🗺️ Routen-Uebersicht{' · ' + status.name if status else ''}",
+            title=f"🗺️ Routen-Übersicht{' · ' + status.name if status else ''}",
             description="\n".join(lines),
             color=config.EMBED_COLOR,
         )
@@ -120,7 +120,7 @@ class Route(commands.Cog):
         await interaction.response.send_message(embed=route_embed(row), ephemeral=True)
 
     # ---------- /route status ----------
-    @group.command(name="status", description="Status einer Route aendern")
+    @group.command(name="status", description="Status einer Route ändern")
     @app_commands.describe(route_id="Die ID der Route", neuer_status="Neuer Status")
     @app_commands.choices(neuer_status=[
         app_commands.Choice(name="Aktiv",     value="aktiv"),
@@ -145,7 +145,7 @@ class Route(commands.Cog):
         await log_action(self.bot, f"⚙️ Route #{route_id} Status: {row['status']} → {neuer_status.value} (von {interaction.user.mention})")
 
     # ---------- /route notiz ----------
-    @group.command(name="notiz", description="Notiz zur Route hinzufuegen")
+    @group.command(name="notiz", description="Notiz zur Route hinzufügen")
     @app_commands.describe(route_id="Die ID der Route", text="Notiz")
     async def notiz(self, interaction: discord.Interaction, route_id: int, text: str):
         ok, err = perm_check(interaction)
@@ -159,11 +159,11 @@ class Route(commands.Cog):
             return
 
         database.route_add_notiz(route_id, f"{interaction.user.display_name}: {text}")
-        await interaction.response.send_message(f"📝 Notiz zu Route **#{route_id}** hinzugefuegt.", ephemeral=True)
+        await interaction.response.send_message(f"📝 Notiz zu Route **#{route_id}** hinzugefügt.", ephemeral=True)
         await log_action(self.bot, f"📝 Route #{route_id} Notiz von {interaction.user.mention}: {text}")
 
     # ---------- /route entfernen ----------
-    @group.command(name="entfernen", description="Route komplett loeschen")
+    @group.command(name="entfernen", description="Route komplett löschen")
     @app_commands.describe(route_id="Die ID der Route")
     async def entfernen(self, interaction: discord.Interaction, route_id: int):
         ok, err = perm_check(interaction)
@@ -177,8 +177,8 @@ class Route(commands.Cog):
             return
 
         database.route_delete(route_id)
-        await interaction.response.send_message(f"🗑️ Route **#{route_id}** ({row['name']}) wurde geloescht.")
-        await log_action(self.bot, f"🗑️ Route #{route_id} '{row['name']}' geloescht von {interaction.user.mention}")
+        await interaction.response.send_message(f"🗑️ Route **#{route_id}** ({row['name']}) wurde gelöscht.")
+        await log_action(self.bot, f"🗑️ Route #{route_id} '{row['name']}' gelöscht von {interaction.user.mention}")
 
 
 async def setup(bot: commands.Bot):

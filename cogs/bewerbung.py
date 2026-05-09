@@ -1,12 +1,12 @@
 """
-Bewerbung — Recruiting-System fuer Serrano
+Bewerbung — Recruiting-System für Serrano
 
 Workflow:
   Bewerber spricht Serrano IN-GAME an -> wird in Discord eingeladen
   Maestro tippt:  /bewerbung start @bewerber
-    -> Modal Welle 1 oeffnet sich beim Maestro
-    -> Maestro fragt muendlich, tippt Antworten ein
-    -> Bot postet Dokument in Vorstellungsgespraech-Channel
+    -> Modal Welle 1 öffnet sich beim Maestro
+    -> Maestro fragt mündlich, tippt Antworten ein
+    -> Bot postet Dokument in Vorstellungsgespräch-Channel
   Maestro tippt:  /bewerbung welle2 <bewerbungs-id>
     -> Modal Welle 2 (Charakter-Tiefe, 2 Teile)
     -> Bot updated Dokument
@@ -83,7 +83,7 @@ class Welle1Modal(discord.ui.Modal, title="Bewerbung · Welle 1 (IC-Erstkontakt)
         )
         self.erfahrung = discord.ui.TextInput(
             label="Erfahrungsstand des Charakters",
-            placeholder="Anfaenger / Erfahren / Veteran — kurz erlaeutern",
+            placeholder="Anfänger / Erfahren / Veteran — kurz erläutern",
             style=discord.TextStyle.paragraph, max_length=500, required=True,
         )
         self.crews = discord.ui.TextInput(
@@ -125,11 +125,11 @@ class Welle1Modal(discord.ui.Modal, title="Bewerbung · Welle 1 (IC-Erstkontakt)
         database.bewerbung_set_message(bewerbung_id, msg.id, target_ch.id)
 
         await interaction.response.send_message(
-            f"✅ Welle 1 fuer {self.bewerber.mention} gespeichert (Bewerbungs-ID **#{bewerbung_id}**).\n"
+            f"✅ Welle 1 für {self.bewerber.mention} gespeichert (Bewerbungs-ID **#{bewerbung_id}**).\n"
             f"Dokument: {msg.jump_url}",
             ephemeral=True,
         )
-        await log_action(self.bot, f"📝 Bewerbung #{bewerbung_id} gestartet von {self.maestro.mention} fuer {self.bewerber.mention}")
+        await log_action(self.bot, f"📝 Bewerbung #{bewerbung_id} gestartet von {self.maestro.mention} für {self.bewerber.mention}")
 
 
 # ---------- Welle 2 Modale (2 Teile, Discord-Limit: 5 Felder pro Modal) ----------
@@ -140,7 +140,7 @@ class Welle2ModalA(discord.ui.Modal, title="Bewerbung · Welle 2A (Charakter-Tie
         self.bewerbung_id = bewerbung_id
 
         self.backstory = discord.ui.TextInput(
-            label="Backstory (3-5 Saetze)",
+            label="Backstory (3-5 Sätze)",
             style=discord.TextStyle.paragraph, max_length=1000, required=True,
         )
         self.weg = discord.ui.TextInput(
@@ -198,7 +198,7 @@ class Welle2ModalB(discord.ui.Modal, title="Bewerbung · Welle 2B (Charakter-Tie
         self.partial = partial
 
         self.polizei = discord.ui.TextInput(
-            label="Verhalten gegenueber Polizei",
+            label="Verhalten gegenüber Polizei",
             style=discord.TextStyle.paragraph, max_length=400, required=True,
         )
         self.ziele = discord.ui.TextInput(
@@ -238,7 +238,7 @@ class Welle2ModalB(discord.ui.Modal, title="Bewerbung · Welle 2B (Charakter-Tie
                 pass
 
         await interaction.response.send_message(
-            f"✅ Welle 2 fuer Bewerbung **#{self.bewerbung_id}** gespeichert.",
+            f"✅ Welle 2 für Bewerbung **#{self.bewerbung_id}** gespeichert.",
             ephemeral=True,
         )
         await log_action(self.bot, f"🔍 Bewerbung #{self.bewerbung_id} Welle 2 abgeschlossen")
@@ -404,7 +404,7 @@ class Bewerbung(commands.Cog):
         if not has_rang_in(interaction.user, config.RECRUITING_RANKS):
             erlaubte = ", ".join(rang_name(r) for r in config.RECRUITING_RANKS)
             await interaction.response.send_message(
-                f"❌ Nur folgende Raenge duerfen Bewerbungen starten: {erlaubte}",
+                f"❌ Nur folgende Ränge dürfen Bewerbungen starten: {erlaubte}",
                 ephemeral=True,
             )
             return
@@ -419,7 +419,7 @@ class Bewerbung(commands.Cog):
 
         await interaction.response.send_modal(Welle1Modal(self.bot, bewerber, interaction.user))
 
-    @group.command(name="welle2", description="Welle 2 starten — Charakter-Tiefenpruefung")
+    @group.command(name="welle2", description="Welle 2 starten — Charakter-Tiefenprüfung")
     @app_commands.describe(bewerbung_id="Die ID der bestehenden Bewerbung")
     async def welle2(self, interaction: discord.Interaction, bewerbung_id: int):
         if not has_rang_in(interaction.user, config.RECRUITING_RANKS):
@@ -460,7 +460,7 @@ class Bewerbung(commands.Cog):
             lines.append(f"`#{r['id']:>3}` · **{user_str}** · `{r['status']}` · {r['erstellt'][:10]}")
 
         embed = discord.Embed(
-            title=f"📋 Bewerbungs-Uebersicht{' · ' + status.name if status else ''}",
+            title=f"📋 Bewerbungs-Übersicht{' · ' + status.name if status else ''}",
             description="\n".join(lines),
             color=config.EMBED_COLOR,
         )

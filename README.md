@@ -1,6 +1,6 @@
 # Serrano-Bot
 
-Discord-Bot fuer das **Serrano Kartell** (FiveM Roleplay, Server: Azzlack City).
+Discord-Bot für das **Serrano Kartell** (FiveM Roleplay, Server: Azzlack City).
 
 Was er kann:
 - **Bewerbungs-System (Colloquio)** — 2-Wellen IC-Interview, Maestro fuellt Dokument aus, alles archiviert
@@ -23,8 +23,8 @@ Was er kann:
      - Embed Links
      - Read Message History
      - View Channels
-6. Generierte URL oeffnen → Bot zu deinem Server einladen
-7. **WICHTIG:** Im Discord-Server die Bot-Rolle in der Hierarchie ueber alle Rang-Rollen schieben (sonst kann der Bot keine Rollen vergeben)
+6. Generierte URL öffnen → Bot zu deinem Server einladen
+7. **WICHTIG:** Im Discord-Server die Bot-Rolle in der Hierarchie über alle Rang-Rollen schieben (sonst kann der Bot keine Rollen vergeben)
 
 ---
 
@@ -34,7 +34,7 @@ Aktiviere im Discord den Entwicklermodus: `Einstellungen → Erweitert → Entwi
 
 Dann auf alles was du brauchst rechtsklicken → "ID kopieren":
 
-| Brauchst du fuer | Wo |
+| Brauchst du für | Wo |
 |---|---|
 | `GUILD_ID` | Rechtsklick auf Server-Icon |
 | Rollen-IDs (12 Stueck) | Server-Einstellungen → Rollen → ID kopieren |
@@ -53,7 +53,7 @@ DISCORD_TOKEN=DEIN_BOT_TOKEN_VON_OBEN
 GUILD_ID=DEINE_SERVER_ID
 ```
 
-### 3b) `config.py` ausfuellen
+### 3b) `config.py` ausfüllen
 
 Oeffne `config.py` und ersetze alle `0` durch die echten IDs:
 
@@ -81,7 +81,7 @@ CHANNEL_SANKTIONEN = 123456789012345678
 4. Variables setzen (Variables-Tab):
    - `DISCORD_TOKEN` = dein Token
    - `GUILD_ID` = deine Server-ID
-5. Settings → Generate Domain (nicht noetig, aber optional)
+5. Settings → Generate Domain (nicht nötig, aber optional)
 6. Bot startet automatisch. Logs siehst du im Railway-Dashboard.
 
 **Free-Tier Limits:** 500 Stunden/Monat (~20 Tage). Fuer 24/7 musst du Hobby-Plan ($5/Monat).
@@ -103,9 +103,9 @@ python bot.py
 
 | Command | Wer darf? | Was passiert? |
 |---|---|---|
-| `/colloquio start bewerber:@user` | Maestro+ | Modal Welle 1 oeffnet sich, Maestro tippt Antworten waehrend Befragung |
+| `/colloquio start bewerber:@user` | Maestro+ | Modal Welle 1 öffnet sich, Maestro tippt Antworten während Befragung |
 | `/colloquio welle2 bewerbung_id:42` | Maestro+ | Modal Welle 2 (Charakter-Tiefe) — 2 Teile |
-| `/colloquio liste status:offen` | jeder | Uebersicht aller Bewerbungen |
+| `/colloquio liste status:offen` | jeder | Übersicht aller Bewerbungen |
 | `/colloquio zeigen bewerbung_id:42` | jeder | Eine Bewerbung im Detail |
 
 Nach Welle 2 erscheinen **[✅ Annehmen] [❌ Ablehnen] Buttons** unter dem Dokument.
@@ -126,7 +126,7 @@ Nach Welle 2 erscheinen **[✅ Annehmen] [❌ Ablehnen] Buttons** unter dem Doku
 
 ---
 
-## TEIL 6 — Berechtigungs-System aendern
+## TEIL 6 — Berechtigungs-System ändern
 
 In `config.py`:
 
@@ -149,12 +149,12 @@ Aenderungen → Bot neu starten.
 - Sicherstellen dass `GUILD_ID` korrekt ist
 
 **Bot kann keine Rollen vergeben:**
-- Bot-Rolle in der Hierarchie ueber alle Rang-Rollen schieben
-- Berechtigung "Rollen verwalten" pruefen
+- Bot-Rolle in der Hierarchie über alle Rang-Rollen schieben
+- Berechtigung "Rollen verwalten" prüfen
 
 **"DISCORD_TOKEN fehlt":**
-- `.env` Datei pruefen, kein Leerzeichen vor/nach dem `=`
-- Auf Railway: Variables-Tab pruefen
+- `.env` Datei prüfen, kein Leerzeichen vor/nach dem `=`
+- Auf Railway: Variables-Tab prüfen
 
 ---
 

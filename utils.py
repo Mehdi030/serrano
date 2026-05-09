@@ -12,7 +12,7 @@ def rang_name(rang_nr: int) -> str:
 
 
 def get_user_rang(member: discord.Member) -> int:
-    """Hoechster Rang den der Member ueber Discord-Rollen besitzt. 0 = kein Rang."""
+    """Höchster Rang den der Member über Discord-Rollen besitzt. 0 = kein Rang."""
     if not isinstance(member, discord.Member):
         return 0
     role_ids = {r.id for r in member.roles}
@@ -24,24 +24,24 @@ def get_user_rang(member: discord.Member) -> int:
 
 
 def has_rang_in(member: discord.Member, rang_liste: list[int]) -> bool:
-    """Prueft ob Member mindestens einen der Raenge in der Liste hat."""
+    """Prüft ob Member mindestens einen der Ränge in der Liste hat."""
     own = get_user_rang(member)
     return own in rang_liste
 
 
 def can_manage(actor: discord.Member, target: discord.Member, allowed_ranks: list[int]) -> tuple[bool, str]:
     """
-    Hierarchie-geschuetzter Check:
+    Hierarchie-geschützter Check:
       1. actor muss einen der allowed_ranks haben
-      2. actor's Rang muss STRIKT HOEHER sein als target's Rang
-    Gibt (ok, fehlertext) zurueck.
+      2. actor's Rang muss STRIKT HÖHER sein als target's Rang
+    Gibt (ok, fehlertext) zurück.
     """
     actor_rang = get_user_rang(actor)
     target_rang = get_user_rang(target)
 
     if actor_rang not in allowed_ranks:
         erlaubte = ", ".join(rang_name(r) for r in allowed_ranks)
-        return False, f"❌ Nur folgende Raenge duerfen diese Aktion: {erlaubte}"
+        return False, f"❌ Nur folgende Ränge dürfen diese Aktion: {erlaubte}"
 
     if target_rang >= actor_rang:
         return False, (

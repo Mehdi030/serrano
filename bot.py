@@ -1,6 +1,6 @@
 """
 Serrano-Bot — Main Entry
-Startet den Bot, laedt Cogs, syncht Slash-Commands.
+Startet den Bot, lädt Cogs, syncht Slash-Commands.
 """
 import os
 import asyncio
@@ -32,7 +32,7 @@ async def on_ready():
         guild = discord.Object(id=GUILD_ID)
         bot.tree.copy_global_to(guild=guild)
         synced = await bot.tree.sync(guild=guild)
-        log.info(f"{len(synced)} Slash-Commands fuer Guild {GUILD_ID} gesynced")
+        log.info(f"{len(synced)} Slash-Commands für Guild {GUILD_ID} gesynced")
     else:
         synced = await bot.tree.sync()
         log.info(f"{len(synced)} Slash-Commands global gesynced")

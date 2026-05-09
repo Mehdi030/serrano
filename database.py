@@ -1,5 +1,5 @@
 """
-SQLite-Datenbank fuer Serrano-Bot
+SQLite-Datenbank für Serrano-Bot
 Speichert: Bewerbungen, Mitglieder, Verwarnungen, Notizen, Rang-Historie
 """
 import sqlite3

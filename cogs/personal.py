@@ -6,11 +6,11 @@ Berechtigungen (siehe config.py):
   /abmelden                          -> alle Kartell-Mitglieder
   /befoerdern, /degradieren,
   /verwarnen, /notiz                 -> PERSONAL_AKTION_RANKS, mit Hierarchie-Schutz
-                                        (man kann nur Raenge UNTER sich anfassen)
+                                        (man kann nur Ränge UNTER sich anfassen)
   /rauswurf                          -> RAUSWURF_RANKS, mit Hierarchie-Schutz
 
 Befoerdern-Logik: Der NEUE Rang muss noch unter dem eigenen Rang liegen.
-                  Reclutatore (5) kann also max. auf Rang 4 befoerdern.
+                  Reclutatore (5) kann also max. auf Rang 4 befördern.
 """
 import discord
 from discord import app_commands
@@ -32,7 +32,7 @@ class Personal(commands.Cog):
         m = database.member_get(user.id)
         if not m:
             await interaction.response.send_message(
-                f"❌ Keine Personal-Akte fuer {user.mention} vorhanden.", ephemeral=True,
+                f"❌ Keine Personal-Akte für {user.mention} vorhanden.", ephemeral=True,
             )
             return
 
@@ -80,8 +80,8 @@ class Personal(commands.Cog):
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
     # ---------- /befoerdern ----------
-    @app_commands.command(name="befoerdern", description="Mitglied befoerdern (Rang +1, mit Hierarchie-Schutz)")
-    @app_commands.describe(user="Mitglied", grund="Grund der Befoerderung")
+    @app_commands.command(name="befoerdern", description="Mitglied befördern (Rang +1, mit Hierarchie-Schutz)")
+    @app_commands.describe(user="Mitglied", grund="Grund der Beförderung")
     async def befoerdern(self, interaction: discord.Interaction, user: discord.Member, grund: str = "—"):
         ok, err = can_manage(interaction.user, user, config.PERSONAL_AKTION_RANKS)
         if not ok:
@@ -96,14 +96,14 @@ class Personal(commands.Cog):
         alt = m["rang"]
         neu = alt + 1
         if neu not in config.RANGS:
-            await interaction.response.send_message("❌ Hoechster Rang erreicht.", ephemeral=True)
+            await interaction.response.send_message("❌ Höchster Rang erreicht.", ephemeral=True)
             return
 
         # Hierarchie: Neuer Rang muss STRIKT UNTER eigenem Rang bleiben
         own_rang = get_user_rang(interaction.user)
         if neu >= own_rang:
             await interaction.response.send_message(
-                f"❌ Du kannst nicht auf Rang **{rang_name(neu)}** befoerdern (>= dein eigener Rang **{rang_name(own_rang)}**).",
+                f"❌ Du kannst nicht auf Rang **{rang_name(neu)}** befördern (>= dein eigener Rang **{rang_name(own_rang)}**).",
                 ephemeral=True,
             )
             return
@@ -113,18 +113,18 @@ class Personal(commands.Cog):
         if alte_rolle_id:
             r = interaction.guild.get_role(alte_rolle_id)
             if r and r in user.roles:
-                await user.remove_roles(r, reason=f"Befoerderung: {grund}")
+                await user.remove_roles(r, reason=f"Beförderung: {grund}")
         if neue_rolle_id:
             r = interaction.guild.get_role(neue_rolle_id)
             if r:
-                await user.add_roles(r, reason=f"Befoerderung: {grund}")
+                await user.add_roles(r, reason=f"Beförderung: {grund}")
 
         database.member_update_rang(user.id, neu)
         database.rang_log(user.id, alt, neu, grund, interaction.user.id)
 
         try:
             await user.send(
-                f"📈 Du wurdest im **{config.KARTELL_NAME}** befoerdert!\n"
+                f"📈 Du wurdest im **{config.KARTELL_NAME}** befördert!\n"
                 f"**{rang_name(alt)}** → **{rang_name(neu)}**\nGrund: {grund}"
             )
         except discord.Forbidden:
@@ -133,7 +133,7 @@ class Personal(commands.Cog):
         await interaction.response.send_message(
             f"✅ {user.mention}: **{rang_name(alt)}** → **{rang_name(neu)}**",
         )
-        await log_action(self.bot, f"📈 Befoerderung: {user.mention} {rang_name(alt)} → {rang_name(neu)} (von {interaction.user.mention}, Grund: {grund})")
+        await log_action(self.bot, f"📈 Beförderung: {user.mention} {rang_name(alt)} → {rang_name(neu)} (von {interaction.user.mention}, Grund: {grund})")
 
     # ---------- /degradieren ----------
     @app_commands.command(name="degradieren", description="Mitglied degradieren (Rang -1)")
@@ -152,7 +152,7 @@ class Personal(commands.Cog):
         alt = m["rang"]
         neu = alt - 1
         if neu < 1:
-            await interaction.response.send_message("❌ Niedrigster Rang erreicht. Nutze /rauswurf falls noetig.", ephemeral=True)
+            await interaction.response.send_message("❌ Niedrigster Rang erreicht. Nutze /rauswurf falls nötig.", ephemeral=True)
             return
 
         alte_rolle_id = config.RANGS[alt][1]
@@ -211,7 +211,7 @@ class Personal(commands.Cog):
                     title="🚨 Sanktions-Eskalation",
                     description=f"{user.mention} hat **{count} Verwarnungen** erreicht.\n"
                                 f"Letzter Grund: {grund}\n\n"
-                                f"Capo+ entscheiden ueber weitere Sanktion.",
+                                f"Capo+ entscheiden über weitere Sanktion.",
                     color=0xFF0000,
                 )
                 await ch.send(embed=eskal_embed)
@@ -221,7 +221,7 @@ class Personal(commands.Cog):
         await log_action(self.bot, f"⚠️ Verwarnung: {user.mention} ({count}) von {interaction.user.mention} — {grund}")
 
     # ---------- /notiz ----------
-    @app_commands.command(name="notiz", description="Interne Notiz zu einem Mitglied hinzufuegen")
+    @app_commands.command(name="notiz", description="Interne Notiz zu einem Mitglied hinzufügen")
     @app_commands.describe(user="Mitglied", text="Notiz")
     async def notiz(self, interaction: discord.Interaction, user: discord.Member, text: str):
         ok, err = can_manage(interaction.user, user, config.PERSONAL_AKTION_RANKS)
@@ -229,15 +229,15 @@ class Personal(commands.Cog):
             await interaction.response.send_message(err, ephemeral=True)
             return
         database.note_add(user.id, text, interaction.user.id)
-        await interaction.response.send_message(f"📝 Notiz fuer {user.mention} gespeichert.", ephemeral=True)
-        await log_action(self.bot, f"📝 Notiz fuer {user.mention} von {interaction.user.mention}: {text}")
+        await interaction.response.send_message(f"📝 Notiz für {user.mention} gespeichert.", ephemeral=True)
+        await log_action(self.bot, f"📝 Notiz für {user.mention} von {interaction.user.mention}: {text}")
 
     # ---------- /mitglieder ----------
     @app_commands.command(name="mitglieder", description="Mitglieder eines bestimmten Rangs auflisten")
     @app_commands.describe(rang="Welcher Rang? (1-12)")
     async def mitglieder(self, interaction: discord.Interaction, rang: int):
         if rang not in config.RANGS:
-            await interaction.response.send_message("❌ Rang ungueltig (1-12).", ephemeral=True)
+            await interaction.response.send_message("❌ Rang ungültig (1-12).", ephemeral=True)
             return
         rows = database.member_list_by_rang(rang)
         if not rows:
@@ -255,11 +255,11 @@ class Personal(commands.Cog):
 
     # ---------- /inaktiv ----------
     @app_commands.command(name="inaktiv", description="Inaktive Mitglieder anzeigen")
-    @app_commands.describe(tage="Wie viele Tage Inaktivitaet?")
+    @app_commands.describe(tage="Wie viele Tage Inaktivität?")
     async def inaktiv(self, interaction: discord.Interaction, tage: int = 7):
         rows = database.member_list_inactive(tage)
         if not rows:
-            await interaction.response.send_message(f"✅ Keine Inaktivitaet > {tage} Tage.", ephemeral=True)
+            await interaction.response.send_message(f"✅ Keine Inaktivität > {tage} Tage.", ephemeral=True)
             return
         lines = [
             f"• <@{r['user_id']}> · **{r['charakter_name']}** · {rang_name(r['rang'])} · zuletzt {r['last_active'][:10] if r['last_active'] else '—'}"
