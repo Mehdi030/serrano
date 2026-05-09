@@ -122,6 +122,11 @@ def init_db():
                 erfasst_von TEXT,
                 timestamp  TEXT
             );
+
+            CREATE TABLE IF NOT EXISTS bot_state (
+                key   TEXT PRIMARY KEY,
+                value TEXT
+            );
         """)
         conn.commit()
 
@@ -554,3 +559,33 @@ def total_routen_aktiv() -> int:
     with get_conn() as conn:
         row = conn.execute("SELECT COUNT(*) AS n FROM routen WHERE status = 'aktiv'").fetchone()
         return row["n"] if row else 0
+
+
+# ---------- Generischer Key-Value-Store (Bot-State) ----------
+def state_set(key: str, value):
+    val = str(value) if value is not None else None
+    with get_conn() as conn:
+        if val is None:
+            conn.execute("DELETE FROM bot_state WHERE key = ?", (key,))
+        else:
+            conn.execute(
+                "INSERT INTO bot_state (key, value) VALUES (?, ?) "
+                "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+                (key, val),
+            )
+        conn.commit()
+
+
+def state_get(key: str, default=None):
+    with get_conn() as conn:
+        row = conn.execute("SELECT value FROM bot_state WHERE key = ?", (key,)).fetchone()
+        return row["value"] if row else default
+
+
+def inv_last_log():
+    """Letzter Eintrag im Inventar-Log (für Dashboard 'Letzte Bewegung')."""
+    with get_conn() as conn:
+        return conn.execute(
+            "SELECT l.*, i.name AS item_name, i.einheit AS einheit FROM inventar_log l "
+            "JOIN inventar_items i ON l.item_id = i.id ORDER BY l.timestamp DESC LIMIT 1"
+        ).fetchone()

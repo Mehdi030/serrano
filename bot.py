@@ -37,6 +37,14 @@ async def on_ready():
         synced = await bot.tree.sync()
         log.info(f"{len(synced)} Slash-Commands global gesynced")
 
+    # Live-Dashboards beim Start einmal aktualisieren
+    try:
+        from cogs.inventar import update_inventar_dashboard
+        if await update_inventar_dashboard(bot):
+            log.info("Inventar-Live-Dashboard aktualisiert")
+    except Exception as e:
+        log.warning(f"Konnte Inventar-Dashboard nicht aktualisieren: {e}")
+
 
 @bot.event
 async def on_member_update(before, after):
