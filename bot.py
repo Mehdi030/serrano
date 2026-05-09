@@ -45,6 +45,13 @@ async def on_ready():
     except Exception as e:
         log.warning(f"Konnte Inventar-Dashboard nicht aktualisieren: {e}")
 
+    try:
+        from cogs.bewerbung import update_bewerbungen_dashboard
+        if await update_bewerbungen_dashboard(bot):
+            log.info("Bewerbungen-Live-Dashboard aktualisiert")
+    except Exception as e:
+        log.warning(f"Konnte Bewerbungen-Dashboard nicht aktualisieren: {e}")
+
 
 @bot.event
 async def on_member_update(before, after):

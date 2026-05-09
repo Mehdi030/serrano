@@ -14,13 +14,14 @@ Workflow:
     -> Bei Annahme: Candidato-Rolle, Personal-Akte, Welcome-DM
 """
 import json
+from datetime import datetime
 import discord
 from discord import app_commands
 from discord.ext import commands
 
 import config
 import database
-from utils import has_rang_in, rang_name, log_action
+from utils import has_rang_in, rang_name, log_action, format_relative_time
 
 
 def build_dokument_embed(bewerbung_row, bewerber: discord.User, maestro: discord.User) -> discord.Embed:
@@ -61,6 +62,135 @@ def build_dokument_embed(bewerbung_row, bewerber: discord.User, maestro: discord
 
     embed.set_footer(text=f"{config.KARTELL_NAME} · {config.SERVER_NAME} · Bewerbungs-ID {bewerbung_row['id']}")
     return embed
+
+
+# ============================================================
+# ============ Live-Dashboard Bewerber-Checkliste ============
+# ============================================================
+
+def _bewerbung_charakter_name(row) -> str:
+    """Holt Charakter-Name aus Welle1-Daten oder fallback."""
+    if not row["welle1_data"]:
+        return "—"
+    try:
+        d = json.loads(row["welle1_data"])
+        return d.get("name", "—")
+    except Exception:
+        return "—"
+
+
+def build_bewerbungen_dashboard_embed() -> discord.Embed:
+    """Live-Übersicht aller Bewerbungen für #Bewerber-Checkliste."""
+    welle1 = database.bewerbung_list("welle1_offen")
+    welle2 = database.bewerbung_list("welle2_offen")
+    angenommen = database.bewerbung_list("angenommen")
+    abgelehnt = database.bewerbung_list("abgelehnt")
+
+    embed = discord.Embed(
+        title=f"📋 Bewerber-Übersicht · {config.KARTELL_NAME}",
+        description="*Live-Liste — aktualisiert sich automatisch bei jeder Bewerbungs-Aktion*",
+        color=config.EMBED_COLOR,
+    )
+
+    # WELLE 1 OFFEN
+    if welle1:
+        lines = []
+        for r in welle1[:15]:
+            name = _bewerbung_charakter_name(r)
+            rel = format_relative_time(r["erstellt"])
+            lines.append(f"`#{r['id']:>3}` <@{r['user_id']}> · *{name}* · {rel} · von <@{r['maestro_id']}>")
+        embed.add_field(
+            name=f"📝 Welle 1 — Erstkontakt ({len(welle1)})",
+            value="\n".join(lines) + (f"\n*…und {len(welle1)-15} weitere*" if len(welle1) > 15 else ""),
+            inline=False,
+        )
+    else:
+        embed.add_field(name="📝 Welle 1 — Erstkontakt (0)", value="*Aktuell keine offen.*", inline=False)
+
+    # WELLE 2 OFFEN
+    if welle2:
+        lines = []
+        for r in welle2[:15]:
+            name = _bewerbung_charakter_name(r)
+            rel = format_relative_time(r["aktualisiert"] or r["erstellt"])
+            lines.append(f"`#{r['id']:>3}` <@{r['user_id']}> · *{name}* · {rel} · von <@{r['maestro_id']}>")
+        embed.add_field(
+            name=f"🔍 Welle 2 — Tiefenprüfung ({len(welle2)})",
+            value="\n".join(lines) + (f"\n*…und {len(welle2)-15} weitere*" if len(welle2) > 15 else ""),
+            inline=False,
+        )
+    else:
+        embed.add_field(name="🔍 Welle 2 — Tiefenprüfung (0)", value="*Aktuell keine offen.*", inline=False)
+
+    # AUFGENOMMEN (eingeladen)
+    if angenommen:
+        lines = []
+        for r in angenommen[:5]:
+            name = _bewerbung_charakter_name(r)
+            datum = (r["aktualisiert"] or r["erstellt"])[:10]
+            lines.append(f"`#{r['id']:>3}` ✅ <@{r['user_id']}> · *{name}* · {datum}")
+        embed.add_field(
+            name=f"✅ Eingeladen / Aufgenommen ({len(angenommen)})",
+            value="\n".join(lines) + (f"\n*…und {len(angenommen)-5} weitere insgesamt*" if len(angenommen) > 5 else ""),
+            inline=False,
+        )
+    else:
+        embed.add_field(name="✅ Eingeladen / Aufgenommen (0)", value="*Noch niemand aufgenommen.*", inline=False)
+
+    # ABGELEHNT
+    if abgelehnt:
+        lines = []
+        for r in abgelehnt[:5]:
+            name = _bewerbung_charakter_name(r)
+            datum = (r["aktualisiert"] or r["erstellt"])[:10]
+            lines.append(f"`#{r['id']:>3}` ❌ <@{r['user_id']}> · *{name}* · {datum}")
+        embed.add_field(
+            name=f"❌ Abgelehnt ({len(abgelehnt)})",
+            value="\n".join(lines) + (f"\n*…und {len(abgelehnt)-5} weitere insgesamt*" if len(abgelehnt) > 5 else ""),
+            inline=False,
+        )
+
+    # Stats-Footer
+    total = len(welle1) + len(welle2) + len(angenommen) + len(abgelehnt)
+    embed.set_footer(
+        text=f"🔄 Live-Update aktiv  ·  {total} Bewerbungen gesamt  ·  "
+             f"Stand: {datetime.utcnow().strftime('%d.%m.%Y %H:%M')} UTC"
+    )
+    return embed
+
+
+async def update_bewerbungen_dashboard(bot: commands.Bot):
+    """Aktualisiert die persistente Dashboard-Message in #Bewerber-Checkliste."""
+    msg_id = database.state_get("bew_dashboard_msg_id")
+    ch_id = database.state_get("bew_dashboard_ch_id")
+    if not msg_id or not ch_id:
+        return False
+
+    ch = bot.get_channel(int(ch_id))
+    if not ch:
+        return False
+
+    try:
+        msg = await ch.fetch_message(int(msg_id))
+        await msg.edit(embed=build_bewerbungen_dashboard_embed())
+        return True
+    except discord.NotFound:
+        database.state_set("bew_dashboard_msg_id", None)
+        database.state_set("bew_dashboard_ch_id", None)
+        return False
+    except Exception:
+        return False
+
+
+def channel_check_bewerbung(interaction: discord.Interaction) -> tuple[bool, str]:
+    """Lehnt Befehle in #Bewerber-Checkliste ab — dort soll nur das Live-Dashboard sein."""
+    if config.CHANNEL_BEWERBER_CHECKLISTE and interaction.channel and \
+            interaction.channel.id == config.CHANNEL_BEWERBER_CHECKLISTE:
+        return False, (
+            f"❌ Bitte nicht in <#{config.CHANNEL_BEWERBER_CHECKLISTE}> ausführen.\n"
+            f"Dort ist nur das Live-Dashboard. Nutze einen anderen Channel für Befehle."
+        )
+    return True, ""
 
 
 # ---------- Welle 1 Modal ----------
@@ -130,6 +260,7 @@ class Welle1Modal(discord.ui.Modal, title="Bewerbung · Welle 1 (IC-Erstkontakt)
             ephemeral=True,
         )
         await log_action(self.bot, f"📝 Bewerbung #{bewerbung_id} gestartet von {self.maestro.mention} für {self.bewerber.mention}")
+        await update_bewerbungen_dashboard(self.bot)
 
 
 # ---------- Welle 2 Modale (2 Teile, Discord-Limit: 5 Felder pro Modal) ----------
@@ -242,6 +373,7 @@ class Welle2ModalB(discord.ui.Modal, title="Bewerbung · Welle 2B (Charakter-Tie
             ephemeral=True,
         )
         await log_action(self.bot, f"🔍 Bewerbung #{self.bewerbung_id} Welle 2 abgeschlossen")
+        await update_bewerbungen_dashboard(self.bot)
 
 
 # ---------- Annahme/Ablehnung Buttons ----------
@@ -339,6 +471,7 @@ class AnnahmeView(discord.ui.View):
             ephemeral=True,
         )
         await log_action(interaction.client, f"✅ Bewerbung #{self.bewerbung_id} angenommen von {interaction.user.mention} — {bewerber.mention} ist {rang_name(rang_nr)}")
+        await update_bewerbungen_dashboard(interaction.client)
 
     @discord.ui.button(label="Ablehnen", style=discord.ButtonStyle.danger, emoji="❌", custom_id="bewerbung_reject")
     async def ablehnen(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -388,6 +521,7 @@ class AblehnenModal(discord.ui.Modal, title="Bewerbung ablehnen"):
 
         await interaction.response.send_message("❌ Bewerbung abgelehnt.", ephemeral=True)
         await log_action(interaction.client, f"❌ Bewerbung #{self.bewerbung_id} abgelehnt von {interaction.user.mention}")
+        await update_bewerbungen_dashboard(interaction.client)
 
 
 # ---------- Cog ----------
@@ -398,9 +532,13 @@ class Bewerbung(commands.Cog):
 
     group = app_commands.Group(name="bewerbung", description="Bewerbungs-System des Serrano Kartells")
 
-    @group.command(name="start", description="Welle 1 starten — Maestro fuellt das Dokument aus")
+    @group.command(name="start", description="Welle 1 starten — Maestro füllt das Dokument aus")
     @app_commands.describe(bewerber="Der Bewerber im Discord")
     async def start(self, interaction: discord.Interaction, bewerber: discord.Member):
+        ch_ok, ch_err = channel_check_bewerbung(interaction)
+        if not ch_ok:
+            await interaction.response.send_message(ch_err, ephemeral=True)
+            return
         if not has_rang_in(interaction.user, config.RECRUITING_RANKS):
             erlaubte = ", ".join(rang_name(r) for r in config.RECRUITING_RANKS)
             await interaction.response.send_message(
@@ -422,6 +560,10 @@ class Bewerbung(commands.Cog):
     @group.command(name="welle2", description="Welle 2 starten — Charakter-Tiefenprüfung")
     @app_commands.describe(bewerbung_id="Die ID der bestehenden Bewerbung")
     async def welle2(self, interaction: discord.Interaction, bewerbung_id: int):
+        ch_ok, ch_err = channel_check_bewerbung(interaction)
+        if not ch_ok:
+            await interaction.response.send_message(ch_err, ephemeral=True)
+            return
         if not has_rang_in(interaction.user, config.RECRUITING_RANKS):
             await interaction.response.send_message("❌ Keine Berechtigung.", ephemeral=True)
             return
@@ -478,6 +620,60 @@ class Bewerbung(commands.Cog):
         maestro = await interaction.client.fetch_user(int(row["maestro_id"]))
         embed = build_dokument_embed(row, bewerber, maestro)
         await interaction.response.send_message(embed=embed, ephemeral=True)
+
+    @group.command(name="dashboard", description="Live-Dashboard in #Bewerber-Checkliste aufstellen oder erneuern")
+    async def dashboard(self, interaction: discord.Interaction):
+        if not has_rang_in(interaction.user, config.RECRUITING_RANKS):
+            erlaubte = ", ".join(rang_name(r) for r in config.RECRUITING_RANKS)
+            await interaction.response.send_message(
+                f"❌ Nur folgende Ränge: {erlaubte}", ephemeral=True,
+            )
+            return
+
+        if not config.CHANNEL_BEWERBER_CHECKLISTE:
+            await interaction.response.send_message(
+                "❌ `CHANNEL_BEWERBER_CHECKLISTE` ist in `config.py` nicht gesetzt. "
+                "Trag die ID des Bewerber-Checkliste-Channels ein, dann nochmal versuchen.",
+                ephemeral=True,
+            )
+            return
+
+        ch = self.bot.get_channel(config.CHANNEL_BEWERBER_CHECKLISTE)
+        if not ch:
+            await interaction.response.send_message(
+                "❌ Bewerber-Checkliste-Channel nicht gefunden. Prüf die ID in der Config.",
+                ephemeral=True,
+            )
+            return
+
+        # Alten Dashboard-Post (falls existiert) löschen
+        old_msg_id = database.state_get("bew_dashboard_msg_id")
+        old_ch_id = database.state_get("bew_dashboard_ch_id")
+        if old_msg_id and old_ch_id:
+            try:
+                old_ch = self.bot.get_channel(int(old_ch_id))
+                if old_ch:
+                    old_msg = await old_ch.fetch_message(int(old_msg_id))
+                    await old_msg.delete()
+            except Exception:
+                pass
+
+        embed = build_bewerbungen_dashboard_embed()
+        msg = await ch.send(embed=embed)
+        try:
+            await msg.pin()
+        except Exception:
+            pass
+        database.state_set("bew_dashboard_msg_id", msg.id)
+        database.state_set("bew_dashboard_ch_id", ch.id)
+
+        await interaction.response.send_message(
+            f"✅ Bewerber-Live-Dashboard in <#{ch.id}> aufgestellt.\n"
+            f"Es aktualisiert sich automatisch bei jeder Bewerbungs-Aktion.\n\n"
+            f"**Tipp:** Setz die Channel-Berechtigung von <#{ch.id}> so dass nur der Bot dort schreiben darf.",
+            ephemeral=True,
+        )
+        await log_action(self.bot, f"🆕 Bewerber-Live-Dashboard aufgestellt in <#{ch.id}> von {interaction.user.mention}")
 
 
 async def setup(bot: commands.Bot):

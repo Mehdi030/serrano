@@ -1,10 +1,30 @@
 """
-Geteilte Hilfsfunktionen: Berechtigungen, Hierarchie, Logging.
+Geteilte Hilfsfunktionen: Berechtigungen, Hierarchie, Logging, Formatierung.
 """
+from datetime import datetime
 import discord
 from discord.ext import commands
 
 import config
+
+
+def format_relative_time(iso_ts: str) -> str:
+    """'vor 2 Min', 'vor 3 Std', 'vor 5 Tagen'."""
+    if not iso_ts:
+        return "—"
+    try:
+        ts = datetime.fromisoformat(iso_ts)
+        delta = datetime.utcnow() - ts
+        secs = int(delta.total_seconds())
+        if secs < 60:
+            return f"vor {secs} Sek"
+        if secs < 3600:
+            return f"vor {secs // 60} Min"
+        if secs < 86400:
+            return f"vor {secs // 3600} Std"
+        return f"vor {secs // 86400} Tagen"
+    except Exception:
+        return iso_ts[:16].replace("T", " ")
 
 
 def rang_name(rang_nr: int) -> str:

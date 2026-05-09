@@ -16,7 +16,7 @@ from discord.ext import commands
 
 import config
 import database
-from utils import has_rang_in, rang_name, log_action
+from utils import has_rang_in, rang_name, log_action, format_relative_time
 
 
 KATEGORIE_EMOJI = {
@@ -62,23 +62,6 @@ async def auto_post(bot: commands.Bot, channel_id: int, content: str = None, emb
 
 def fmt_money(betrag: int) -> str:
     return f"{betrag:,}".replace(",", ".") + " $"
-
-
-def format_relative_time(iso_ts: str) -> str:
-    """'vor 2 Min', 'vor 3 Std', 'vor 5 Tagen'."""
-    try:
-        ts = datetime.fromisoformat(iso_ts)
-        delta = datetime.utcnow() - ts
-        secs = int(delta.total_seconds())
-        if secs < 60:
-            return f"vor {secs} Sek"
-        if secs < 3600:
-            return f"vor {secs // 60} Min"
-        if secs < 86400:
-            return f"vor {secs // 3600} Std"
-        return f"vor {secs // 86400} Tagen"
-    except Exception:
-        return iso_ts[:16].replace("T", " ")
 
 
 def build_inventar_dashboard_embed() -> discord.Embed:

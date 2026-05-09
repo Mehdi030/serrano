@@ -54,10 +54,11 @@ CHANNEL_BENVENUTO = 1439018134089633810              # Welcome-Nachricht bei Ann
 CHANNEL_SANKTIONEN = 1439018134278508686             # bei Auto-Eskalation Verwarnungen
 
 # Optionale Auto-Post-Channels für Inventar (0 = aus). IDs aus #Bestand, #Geldverlauf etc. eintragen.
-CHANNEL_BESTAND = 0          # Auto-Post bei /inventar bestand updates
-CHANNEL_LAGERVERLAUF = 0     # Auto-Post bei /inventar ein/aus
-CHANNEL_GELDVERLAUF = 0      # Auto-Post bei /kasse ein/aus
-CHANNEL_ABGABEN = 0          # Auto-Post bei /abgabe verbuchen
+CHANNEL_BESTAND = 0              # Live-Dashboard für Inventar
+CHANNEL_LAGERVERLAUF = 0         # Auto-Post bei /inventar ein/aus
+CHANNEL_GELDVERLAUF = 0          # Auto-Post bei /kasse ein/aus
+CHANNEL_ABGABEN = 0              # Auto-Post bei /abgabe verbuchen
+CHANNEL_BEWERBER_CHECKLISTE = 0  # Live-Dashboard für Bewerbungen
 
 # Verwarnungs-Eskalation
 WARN_LIMIT_BIS_SANKTION = 2  # ab dieser Anzahl Warns -> Auto-Post in Sanktion
