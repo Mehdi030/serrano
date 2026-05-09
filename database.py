@@ -84,6 +84,44 @@ def init_db():
                 aktualisiert TEXT,
                 notizen      TEXT
             );
+
+            CREATE TABLE IF NOT EXISTS inventar_items (
+                id        INTEGER PRIMARY KEY AUTOINCREMENT,
+                name      TEXT UNIQUE NOT NULL,
+                kategorie TEXT,
+                einheit   TEXT DEFAULT 'Stück',
+                bestand   INTEGER DEFAULT 0,
+                erstellt  TEXT
+            );
+
+            CREATE TABLE IF NOT EXISTS inventar_log (
+                id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                item_id    INTEGER,
+                aktion     TEXT,
+                menge      INTEGER,
+                grund      TEXT,
+                member_id  TEXT,
+                timestamp  TEXT,
+                FOREIGN KEY(item_id) REFERENCES inventar_items(id)
+            );
+
+            CREATE TABLE IF NOT EXISTS kasse (
+                id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                aktion     TEXT,
+                betrag     INTEGER,
+                grund      TEXT,
+                member_id  TEXT,
+                timestamp  TEXT
+            );
+
+            CREATE TABLE IF NOT EXISTS abgaben (
+                id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id    TEXT NOT NULL,
+                betrag     INTEGER,
+                notiz      TEXT,
+                erfasst_von TEXT,
+                timestamp  TEXT
+            );
         """)
         conn.commit()
 
@@ -357,3 +395,162 @@ def route_add_notiz(route_id: int, notiz: str):
             (new_notes, now(), route_id),
         )
         conn.commit()
+
+
+# ---------- Inventar ----------
+def inv_item_create(name: str, kategorie: str, einheit: str) -> int:
+    with get_conn() as conn:
+        cur = conn.execute(
+            "INSERT INTO inventar_items (name, kategorie, einheit, bestand, erstellt) VALUES (?, ?, ?, 0, ?)",
+            (name, kategorie, einheit, now()),
+        )
+        conn.commit()
+        return cur.lastrowid
+
+
+def inv_item_get(name: str):
+    with get_conn() as conn:
+        return conn.execute("SELECT * FROM inventar_items WHERE name = ? COLLATE NOCASE", (name,)).fetchone()
+
+
+def inv_item_get_by_id(item_id: int):
+    with get_conn() as conn:
+        return conn.execute("SELECT * FROM inventar_items WHERE id = ?", (item_id,)).fetchone()
+
+
+def inv_item_list():
+    with get_conn() as conn:
+        return conn.execute("SELECT * FROM inventar_items ORDER BY kategorie, name").fetchall()
+
+
+def inv_item_delete(item_id: int):
+    with get_conn() as conn:
+        conn.execute("DELETE FROM inventar_log WHERE item_id = ?", (item_id,))
+        conn.execute("DELETE FROM inventar_items WHERE id = ?", (item_id,))
+        conn.commit()
+
+
+def inv_buchen(item_id: int, aktion: str, menge: int, grund: str, member_id: int):
+    """aktion: 'ein' oder 'aus'. Menge immer positiv."""
+    delta = menge if aktion == "ein" else -menge
+    with get_conn() as conn:
+        conn.execute("UPDATE inventar_items SET bestand = bestand + ? WHERE id = ?", (delta, item_id))
+        conn.execute(
+            "INSERT INTO inventar_log (item_id, aktion, menge, grund, member_id, timestamp) VALUES (?, ?, ?, ?, ?, ?)",
+            (item_id, aktion, menge, grund, str(member_id), now()),
+        )
+        conn.commit()
+
+
+def inv_log(item_id: int = None, limit: int = 20):
+    with get_conn() as conn:
+        if item_id:
+            return conn.execute(
+                "SELECT l.*, i.name AS item_name FROM inventar_log l JOIN inventar_items i ON l.item_id = i.id "
+                "WHERE l.item_id = ? ORDER BY l.timestamp DESC LIMIT ?",
+                (item_id, limit),
+            ).fetchall()
+        return conn.execute(
+            "SELECT l.*, i.name AS item_name FROM inventar_log l JOIN inventar_items i ON l.item_id = i.id "
+            "ORDER BY l.timestamp DESC LIMIT ?",
+            (limit,),
+        ).fetchall()
+
+
+# ---------- Kasse ----------
+def kasse_buchen(aktion: str, betrag: int, grund: str, member_id: int):
+    with get_conn() as conn:
+        conn.execute(
+            "INSERT INTO kasse (aktion, betrag, grund, member_id, timestamp) VALUES (?, ?, ?, ?, ?)",
+            (aktion, betrag, grund, str(member_id), now()),
+        )
+        conn.commit()
+
+
+def kasse_stand() -> int:
+    with get_conn() as conn:
+        rows = conn.execute("SELECT aktion, betrag FROM kasse").fetchall()
+        return sum(r["betrag"] if r["aktion"] == "ein" else -r["betrag"] for r in rows)
+
+
+def kasse_log(limit: int = 20):
+    with get_conn() as conn:
+        return conn.execute("SELECT * FROM kasse ORDER BY timestamp DESC LIMIT ?", (limit,)).fetchall()
+
+
+# ---------- Abgaben ----------
+def abgabe_add(user_id: int, betrag: int, notiz: str, erfasst_von: int):
+    with get_conn() as conn:
+        conn.execute(
+            "INSERT INTO abgaben (user_id, betrag, notiz, erfasst_von, timestamp) VALUES (?, ?, ?, ?, ?)",
+            (str(user_id), betrag, notiz, str(erfasst_von), now()),
+        )
+        conn.commit()
+
+
+def abgabe_list(user_id: int):
+    with get_conn() as conn:
+        return conn.execute(
+            "SELECT * FROM abgaben WHERE user_id = ? ORDER BY timestamp DESC", (str(user_id),)
+        ).fetchall()
+
+
+def abgabe_total(user_id: int) -> int:
+    with get_conn() as conn:
+        row = conn.execute(
+            "SELECT COALESCE(SUM(betrag), 0) AS total FROM abgaben WHERE user_id = ?", (str(user_id),)
+        ).fetchone()
+        return row["total"] if row else 0
+
+
+def abgabe_top(limit: int = 10):
+    with get_conn() as conn:
+        return conn.execute(
+            "SELECT user_id, SUM(betrag) AS total, COUNT(*) AS anzahl FROM abgaben "
+            "GROUP BY user_id ORDER BY total DESC LIMIT ?",
+            (limit,),
+        ).fetchall()
+
+
+# ---------- Stats fuer Dashboard ----------
+def member_count_all() -> int:
+    with get_conn() as conn:
+        row = conn.execute("SELECT COUNT(*) AS n FROM members WHERE status = 'aktiv'").fetchone()
+        return row["n"] if row else 0
+
+
+def member_count_per_rang() -> dict:
+    with get_conn() as conn:
+        rows = conn.execute(
+            "SELECT rang, COUNT(*) AS n FROM members WHERE status = 'aktiv' GROUP BY rang"
+        ).fetchall()
+        return {r["rang"]: r["n"] for r in rows}
+
+
+def top_recruiter(limit: int = 5):
+    with get_conn() as conn:
+        return conn.execute(
+            "SELECT recruiter_id, COUNT(*) AS n FROM members WHERE recruiter_id IS NOT NULL "
+            "AND status = 'aktiv' GROUP BY recruiter_id ORDER BY n DESC LIMIT ?",
+            (limit,),
+        ).fetchall()
+
+
+def total_warns() -> int:
+    with get_conn() as conn:
+        row = conn.execute("SELECT COUNT(*) AS n FROM warnings").fetchone()
+        return row["n"] if row else 0
+
+
+def total_bewerbungen_open() -> int:
+    with get_conn() as conn:
+        row = conn.execute(
+            "SELECT COUNT(*) AS n FROM bewerbungen WHERE status NOT IN ('angenommen','abgelehnt')"
+        ).fetchone()
+        return row["n"] if row else 0
+
+
+def total_routen_aktiv() -> int:
+    with get_conn() as conn:
+        row = conn.execute("SELECT COUNT(*) AS n FROM routen WHERE status = 'aktiv'").fetchone()
+        return row["n"] if row else 0

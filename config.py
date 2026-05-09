@@ -41,6 +41,9 @@ RAUSWURF_RANKS = [11, 12]
 # Routenverwaltung
 ROUTE_RANKS = [6, 7, 11, 12]
 
+# Inventar / Kasse / Abgaben (Contabile = Buchhalter)
+INVENTORY_RANKS = [8, 9, 11, 12]
+
 # Rang der bei Annahme automatisch vergeben wird
 RANG_NACH_ANNAHME = 1  # Candidato
 
@@ -49,6 +52,12 @@ CHANNEL_VORSTELLUNGSGESPRAECH = 1439018134739750998  # Bewerbungsdokumente lande
 CHANNEL_LOGS = 1439018134962044994                   # alle Bot-Aktionen werden hier geloggt
 CHANNEL_BENVENUTO = 1439018134089633810              # Welcome-Nachricht bei Annahme
 CHANNEL_SANKTIONEN = 1439018134278508686             # bei Auto-Eskalation Verwarnungen
+
+# Optionale Auto-Post-Channels für Inventar (0 = aus). IDs aus #Bestand, #Geldverlauf etc. eintragen.
+CHANNEL_BESTAND = 0          # Auto-Post bei /inventar bestand updates
+CHANNEL_LAGERVERLAUF = 0     # Auto-Post bei /inventar ein/aus
+CHANNEL_GELDVERLAUF = 0      # Auto-Post bei /kasse ein/aus
+CHANNEL_ABGABEN = 0          # Auto-Post bei /abgabe verbuchen
 
 # Verwarnungs-Eskalation
 WARN_LIMIT_BIS_SANKTION = 2  # ab dieser Anzahl Warns -> Auto-Post in Sanktion

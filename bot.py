@@ -63,6 +63,8 @@ async def main():
         await bot.load_extension("cogs.bewerbung")
         await bot.load_extension("cogs.personal")
         await bot.load_extension("cogs.route")
+        await bot.load_extension("cogs.inventar")
+        await bot.load_extension("cogs.dashboard")
         log.info("Cogs geladen")
         await bot.start(TOKEN)
 
